@@ -1,0 +1,56 @@
+﻿
+@{
+    ViewBag.Title = "Order Details";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Order Details</h2>
+<div class="row">
+    <div class="col-sm-4">
+        <ul id="details" class="customer-details">
+            Details:
+        </ul>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-4">
+        <ul id="products" class="order-list list-group">
+            <li class="list-group-item active">Products on Rent</li>
+        </ul>
+    </div>
+</div>
+
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+
+            // retrieves the Order Id from the URL
+            var url = window.location.href.split("/");
+            var id = url[url.length - 1];
+
+            $.ajax({
+                type: "GET",
+                url: "/api/orders/" + id
+            })
+                .done(function (data) {
+                    // same code as other single GET requests but using pure js instead of jQuery
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.customer.name + '</li>');
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.customer.email + '</li>');
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.customer.telephoneNumber + '</li>');
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.dateOfOrder + '</li>');
+
+                    // get the products associated with the order
+                    for (var i = 0; i < data.length; i++) {
+                        document.getElementById('products')
+                            .insertAdjacentHTML('beforeend', '<li class="list-group-item">' + data[i].product.name + '</li>');
+                    }
+                })
+
+                .fail(function () {
+                    alert("Error processing request: product details could not be retrieved")
+                })
+        });
+    </script>
+}

@@ -1,0 +1,147 @@
+﻿
+@{
+    ViewBag.Title = "New";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>New Order</h2>
+
+<form id="newOrder">
+    <div class="form-group">
+        <label>Customer</label>
+        <div class="tt-container">
+            <input type="text" required data-rule-validCustomer="true" class="form-control" name="customer" id="customer" />
+        </div>
+    </div>
+    <div class="form-group">
+        <label>Product</label>
+        <div class="tt-container">
+            <input type="text" data-rule-atleastOneProduct="true" class="form-control" name="product" id="product" />
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-sm-4">
+            <ul id="productList" class="list-group"></ul>
+        </div>
+    </div>
+    <button type="submit" class="btn btn-primary" id="submitOrder">Submit</button>
+</form>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+
+            var viewModel = {
+                productIds: []
+            };
+
+            // ******************** TYPEAHEAD FOR CUSTOMERS ********************
+            // bloodhound is the suggestion engine behind typeahead
+            var customers = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    // goes to the url to retrieve the api
+                    url: '/api/customers?query=%QUERY',
+                    // wildcard: basically what the user inputs in the text box will appear here
+                    wildcard: '%QUERY'
+                }
+            });
+
+            // configuring the behaviour of typeahead
+            $('#customer').typeahead({
+                minLength: 3,
+                highlight: true
+
+            }, {
+                    name: 'customer',
+                    display: 'name', // the property from the Customer model we want to display in the suggestion box
+                    source: customers    // bloodhound object, must be the same as the bloodhound object created above (var customers = new Bloodhound)
+                    // executes when the name suggested by typeahead is selected
+                }).on("typeahead:select", function (event, customer) {
+                    // 1. adds the customerid property to the viewModel object
+                    // 2. gets the customer.id property from the selected customer (obtained via search query performed by GetCustomers() action in Customers controller)
+                    viewModel.customerId = customer.id;
+                });
+
+            // ******************** TYPEAHEAD FOR PRODUCTS ********************
+            // bloodhound is the suggestion engine behind typeahead
+            var products = new Bloodhound({
+                datumTokenizer: Bloodhound.tokenizers.obj.whitespace('name'),
+                queryTokenizer: Bloodhound.tokenizers.whitespace,
+                remote: {
+                    // goes to the url to retrieve the api
+                    url: '/api/products?query=%QUERY',
+                    // wildcard: basically what the user inputs in the text box will appear here
+                    wildcard: '%QUERY'
+                }
+            });
+
+            // configuring the behaviour of typeahead
+            $('#product').typeahead({
+                minLength: 3,
+                highlight: true
+
+            }, {
+                    name: 'product',
+                    display: 'name', // the property from the Poduct model we want to display in the suggestion box
+                    source: products    // bloodhound object, must be the same as the bloodhound object created above (var products = new Bloodhound)
+                    // executes when the name suggested by typeahead is selected
+                }).on("typeahead:select", function (event, product) {
+
+                    $("#productList").append('<li class="list-group-item">' + product.name + '</li>');
+                    $("#product").typeahead("val", "");
+
+                    // 1. adds the productid property to the viewModel object
+                    // 2. gets the product.id property from the selected product (obtained via search query performed by GetProducts() action in Products controller)
+                    viewModel.productIds.push(product.id);
+                });
+
+            // **** SUBMITTING THE FORM ****
+            $("#submitOrder").on("click", function (e) {
+
+                // custom form validation
+                $.validator.addMethod("validCustomer", function () {
+                    return viewModel.customerId && viewModel.customerId !== 0;
+                }, "Please select a valid customer");
+
+                $.validator.addMethod("atleastOneProduct", function () {
+                    return viewModel.productIds.length > 0;
+                }, "Please select at least one product");
+
+                var validator = $("#newOrder").validate({
+                    // configurating validation
+                    // if form is valid, this function is called to submit the form to the server
+                    submitHandler: function (frm, e) {
+                        // posting the form data to the db
+                        $.ajax({
+                            type: "POST",
+                            url: "/api/orders",
+                            data: viewModel
+                        })
+                            .done(function () {
+                                // resets form fields
+                                $("#customer").typeahead("val", "");
+                                $("#product").typeahead("val", "");
+                                $("#productList").empty();
+                                // resets viewModel object
+                                viewModel = {};
+                                // resets form validation
+                                validator.resetForm();
+                                // toastr plugin notification
+                                toastr.success("Order successfully created");
+                            })
+                            .fail(function () {
+                                toastr.error("Something unexpected happened");
+                            });
+                        // IMPORTANT: prevents the form from being submitted normally (as we want the above AJAX code to submit the form, not the HTML to submit it)
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            });
+        });
+    </script>
+}

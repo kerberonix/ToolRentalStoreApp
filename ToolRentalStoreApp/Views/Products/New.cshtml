@@ -1,0 +1,79 @@
+﻿
+@{
+    ViewBag.Title = "New";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>New Product</h2>
+
+<form id="newProduct">
+    <div class="form-group">
+        <label>Name</label>
+        <input type="text" required class="form-control" name="name" id="name" />
+    </div>
+    <div class="form-group">
+        <label>Quantity</label>
+        <input type="text" required data-rule-productQuantity="true" class="form-control" name="quantity" id="quantity" />
+    </div>
+    <button type="submit" class="btn btn-primary" id="submitProduct">Submit</button>
+</form>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+
+            var product = {}
+
+            $("#submitProduct").on("click", function () {
+                // gets data from input fields and stores it in product object
+                product = {
+                    name: $("#name").val(),
+                    quantity: $("#quantity").val()
+                };
+
+                // custom validation
+                $.validator.addMethod("productQuantity", function () {
+                    return product.quantity > 0 && product.quantity <= 50;
+                }, "Quantity should be between 1 and 50");
+
+                // generic form validation
+                var validator = $("#newProduct").validate({
+                // configurating validation
+                // if form is valid, this function is called to submit the form to the server
+                    submitHandler: function (frm, e) {
+                        // posting the form data to the db
+                        $.ajax({
+                            type: "POST",
+                            url: "/api/products",
+                            data: product
+                        })
+                            .done(function () {
+                                // resets form fields
+                                $("#name").val('');
+                                $("#quantity").val('');
+
+                                // resets product object
+                                product = {};
+
+                                // resets form validation
+                                validator.resetForm();
+
+                                // toastr plugin notification
+                                toastr.success("Product successfully added");
+                            })
+
+                            .fail(function () {
+                                toastr.error("Something unexpected happened");
+                            });
+
+                        // IMPORTANT: prevents the form from being submitted normally (as we want the above AJAX code to submit the form, not the HTML to submit it)
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            });
+        });
+    </script>
+}

@@ -1,0 +1,113 @@
+﻿
+@{
+    ViewBag.Title = "Edit";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Edit Customer</h2>
+
+<form id="editCustomer">
+    <div class="form-group">
+        <label>Name</label>
+        <input type="text" class="form-control" name="name" id="name" />
+    </div>
+    <div class="form-group">
+        <label>Email</label>
+        <input type="text" class="form-control" name="email" id="email" />
+    </div>
+    <div class="form-group">
+        <label>Telephone</label>
+        <input type="text" class="form-control" name="telephone" id="telephone" />
+    </div>
+    <button type="submit" class="btn btn-primary" id="submitCustomer">Submit</button>
+</form>
+
+@section scripts
+{
+    @Scripts.Render("~/bundles/jqueryval")
+    <script>
+        $(document).ready(function () {
+
+            var customer = {}
+
+            // **** POPULATING THE INPUT FIELDS WITH DATA ****
+            // splits the URL to get the id parameter
+            var url = window.location.href.split("/");
+            var id = url[url.length - 1];
+
+            $.ajax({
+                type: "GET",
+                url: "/api/customers/" + id
+            })
+
+                .done(function (data) {
+                    $("#name").val(data.name);
+                    $("#email").val(data.email);
+                    $("#telephone").val(data.telephoneNumber);
+                })
+                .fail(function () {
+                    alert("error processing request: customer details could not be retrieved")
+                })
+
+            // **** SUBMITTING THE FORM ****
+            $("#submitCustomer").on("click", function (event) {
+
+                // gets data from input fields and stores it in customer object
+                customer = {
+                    name: $("#name").val(),
+                    email: $("#email").val(),
+                    telephoneNumber: $("#telephone").val()
+                };
+
+                // custom form validation
+                $.validator.addMethod("validTelephone", function () {
+                    // regex to validate telephone
+                    var reTelephone = /^(?:0|\+?44)(?:\d\s?){9,10}$/;
+                    return reTelephone.test($("#telephone").val());
+
+                }, "Please enter a valid mobile number");
+
+                $.validator.addMethod("validEmail", function () {
+                    // regex to validate email
+                    var reEmail = /\S+@@\S+\.\S+/;
+                    return reEmail.test($("#email").val());
+
+                }, "Please enter a valid email address");
+
+                // generic form validation
+                var validator = $("#editCustomer").validate({
+                    // configurating validation
+                    // if form is valid, this function is called to submit the form to the server
+                    submitHandler: function (frm, e) {
+                        // updating the form data to the db
+                        $.ajax({
+                            type: "PUT",
+                            url: "/api/customers/" + id,
+                            data: customer
+                        })
+                            .done(function () {
+
+                                // resets customer object
+                                customer = {};
+
+                                // resets form validation
+                                validator.resetForm();
+
+                                // toastr plugin notification
+                                toastr.success("Customer successfully updated");
+                            })
+
+                            .fail(function () {
+                                toastr.error("Something unexpected happened");
+                            })
+
+                        // IMPORTANT: prevents the form from being submitted normally (as we want the above AJAX code to submit the form, not the HTML to submit it)
+                        e.preventDefault();
+                        return false;
+                    }
+                });
+            });
+
+        });
+    </script>
+}

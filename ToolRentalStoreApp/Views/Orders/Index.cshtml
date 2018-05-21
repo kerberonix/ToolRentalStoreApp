@@ -1,0 +1,73 @@
+﻿
+@{
+    ViewBag.Title = "Orders";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Orders</h2>
+
+<p>
+    @Html.ActionLink("New", "New", "Orders", new { @class = "btn btn-primary" })
+</p>
+
+<table id="orders-table" class="table table-bordered table-hover">
+    <thead>
+        <tr>
+            <th>Customer Order</th>
+            <th>Delete</th>
+        </tr>
+    </thead>
+    <tbody id="orders"></tbody>
+</table>
+
+@section scripts
+{
+    <script>
+        $(document).ready(function () {
+            var table = $("#orders-table").DataTable({
+                /* DataTables configuration object */
+                type: "GET",
+                sAjaxDataProp: "",   /* as API response is an array, this tells datatables to expect an array rather than an object */
+                ajax: "/api/orders",
+                dataSrc: "", /* API response for GET is an array, datatables doesn't have to specify where to get data from within the response as the data needed is the whole GET response */
+                columns: [
+                    {
+                        data: "id",
+                        render: function (data, type,  order) {
+                            return "<a href='orders/viewOrder/" + order.id + "'>" + order.customer.name + "</a>";
+                        }
+                    },
+                    {
+                        data: "id",
+                        render: function (data, type, order) {
+                            return "<button data-order-id=" + order.id + " class='btn-link js-delete'>Delete</button>";
+                        }
+                    }
+                ]
+            });
+
+            $("#orders-table").on("click", ".js-delete", function () {
+
+                var $button = $(this);
+
+                // bootbox plugin
+                bootbox.confirm("Are you sure you want to delete this order?", function (result) {
+                    if (result) {
+                        $.ajax({
+                            type: "DELETE",
+                            url: "/api/orders/" + $($button).attr("data-order-id") /* the Id is retrieved as it was stored in the HTML element during the GET request (see above code) */
+                        })
+                            .done(function () {
+                                // deletes the corresponding book from the internal list maintained by datatables
+                                table.row($button.parents("tr")).remove().draw();
+                            })
+
+                            .fail(function () {
+                                alert("There was an error processing the request")
+                            });
+                    }
+                });
+            });
+        });
+    </script>
+}
