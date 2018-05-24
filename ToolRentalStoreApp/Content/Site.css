@@ -61,3 +61,31 @@ input.error {
 .features-list li {
     padding: 4px 0;
 }
+
+.pull-right {
+    float: right;
+}
+
+.product-list {
+    line-height: 40px;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #ccc;
+    border-top-color: #007196;
+    border-radius: 100%;
+    /* centering */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* animation */
+    animation: round 2s linear infinite;
+}
+
+@keyframes round {
+    from { transform: rotate(0deg) }
+    to { transform: rotate(360deg) }
+}

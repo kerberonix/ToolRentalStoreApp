@@ -21,7 +21,7 @@
     </div>
     <div class="row">
         <div class="col-sm-4">
-            <ul id="productList" class="list-group"></ul>
+            <ul id="productList" class="list-group product-list"></ul>
         </div>
     </div>
     <button type="submit" class="btn btn-primary" id="submitOrder">Submit</button>
@@ -52,7 +52,7 @@
 
             // configuring the behaviour of typeahead
             $('#customer').typeahead({
-                minLength: 3,
+                minLength: 2,
                 highlight: true
 
             }, {
@@ -81,7 +81,7 @@
 
             // configuring the behaviour of typeahead
             $('#product').typeahead({
-                minLength: 3,
+                minLength: 2,
                 highlight: true
 
             }, {
@@ -91,13 +91,20 @@
                     // executes when the name suggested by typeahead is selected
                 }).on("typeahead:select", function (event, product) {
 
-                    $("#productList").append('<li class="list-group-item">' + product.name + '</li>');
+                    // adds selected product to the order list
+                    $("#productList").append('<li class="list-group-item clearfix">'
+                        + product.name
+                        // saves the id of the product in a data attribute for later (needed to delete item from list)
+                        + '<span class="pull-right"><button type="button" data-product-id=' + product.id + ' class="btn js-delete">Delete</button></span></li>');
+
                     $("#product").typeahead("val", "");
 
                     // 1. adds the productid property to the viewModel object
                     // 2. gets the product.id property from the selected product (obtained via search query performed by GetProducts() action in Products controller)
                     viewModel.productIds.push(product.id);
                 });
+
+
 
             // **** SUBMITTING THE FORM ****
             $("#submitOrder").on("click", function (e) {
@@ -141,6 +148,26 @@
                         return false;
                     }
                 });
+            });
+
+            // **** DELETING PRODUCT FROM ORDER **** /
+            // this code handles the Delete button on products added to an order (on the list)
+            $("#productList").on("click", ".js-delete", function () { // uses a filter to only activate this callback function if the button is clicked, not the whole list. As the filter 'js-delete' is on the button element 
+                // gets the button
+                $button = $(this);
+                // removes the product from the list
+                $button.parents("li").remove();
+
+                // removes the product from the viewModel (data being sent via a HTTP request to the db)
+                for (var i = 0; i < viewModel.productIds.length; i++) {
+                    // checks if the product id in the viewModel and the current list element match
+                    if (viewModel.productIds[i] == $button.attr("data-product-id")) {
+                        // removes the product from the viewmodel
+                        var productToRemove = viewModel.productIds.indexOf(viewModel.productIds[i]);
+                        viewModel.productIds.splice(productToRemove, 1);
+                    }
+                }
+
             });
         });
     </script>

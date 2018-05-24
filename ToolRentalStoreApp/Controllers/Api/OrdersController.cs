@@ -46,7 +46,16 @@ namespace ToolRentalStoreApp.Controllers.Api
         public IHttpActionResult CreateOrder(OrderDetailDto dto)
         {
             var customer = _context.Customers.Single(c => c.Id == dto.CustomerId);
-            var products = _context.Products.Where(c => dto.ProductIds.Contains(c.Id));
+
+            // retrieve products from database
+            var products = _context.Products.Where(c => dto.ProductIds.Contains(c.Id)).ToList();
+            // get the dto productIds
+            // join the products retrieved with the products in the dto (where the dtoId is equal to the product retrieved Id property)
+            // select the products in database and execute query
+            // This joins ("inner") the dto.ProductIds with the products list. In this way the rows are "multiplied" when necessary
+            var joinedProducts = (from dtoIDs in dto.ProductIds
+                           join productsInDb in products on dtoIDs equals productsInDb.Id
+                           select productsInDb).ToList();
 
             var order = new Order
             {
@@ -55,7 +64,7 @@ namespace ToolRentalStoreApp.Controllers.Api
                 DateOfOrder = DateTime.Now
             };
 
-            foreach (var product in products)
+            foreach (var product in joinedProducts)
             {
                 if (product.Quantity == 0)
                     return BadRequest("Product is not available.");

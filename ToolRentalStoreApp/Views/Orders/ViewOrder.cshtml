@@ -36,10 +36,10 @@
             })
                 .done(function (data) {
                     // same code as other single GET requests but using pure js instead of jQuery
-                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.customer.name + '</li>');
-                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.customer.email + '</li>');
-                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.customer.telephoneNumber + '</li>');
-                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[1].order.dateOfOrder + '</li>');
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[0].order.customer.name + '</li>');
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[0].order.customer.email + '</li>');
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[0].order.customer.telephoneNumber + '</li>');
+                    document.getElementById('details').insertAdjacentHTML('beforeend', '<li>' + data[0].order.dateOfOrder.substr(0, 10) + '</li>');
 
                     // get the products associated with the order
                     for (var i = 0; i < data.length; i++) {

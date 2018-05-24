@@ -13,17 +13,27 @@
 <table id="orders-table" class="table table-bordered table-hover">
     <thead>
         <tr>
-            <th>Customer Order</th>
+            <th>Orders</th>
             <th>Delete</th>
         </tr>
     </thead>
     <tbody id="orders"></tbody>
 </table>
+<div class="ll"></div>
+<div id="loading" class="loading-spinner ll" ></div>
 
 @section scripts
 {
     <script>
         $(document).ready(function () {
+
+            $(document).ajaxStart(function () {
+                $("#loading").css("display", "block");
+            });
+            $(document).ajaxComplete(function () {
+                $("#loading").css("display", "none");
+            });
+
             var table = $("#orders-table").DataTable({
                 /* DataTables configuration object */
                 type: "GET",
@@ -49,13 +59,18 @@
             $("#orders-table").on("click", ".js-delete", function () {
 
                 var $button = $(this);
+                var $orderId = ($button).attr("data-order-id");
 
                 // bootbox plugin
                 bootbox.confirm("Are you sure you want to delete this order?", function (result) {
                     if (result) {
                         $.ajax({
                             type: "DELETE",
-                            url: "/api/orders/" + $($button).attr("data-order-id") /* the Id is retrieved as it was stored in the HTML element during the GET request (see above code) */
+                            url: "/api/orders/" + $($button).attr("data-order-id"), /* the Id is retrieved as it was stored in the HTML element during the GET request (see above code) */
+                            // code to execute before the ajax request starts
+                            beforeSend: function () {
+                                getProductsToDelete($orderId);
+                            }
                         })
                             .done(function () {
                                 // deletes the corresponding book from the internal list maintained by datatables
@@ -63,11 +78,54 @@
                             })
 
                             .fail(function () {
-                                alert("There was an error processing the request")
+                                alert("There was an error processing the request");
                             });
                     }
                 });
             });
+
+            // in order to update the product quantities after an order is deleted
+            // it is necessary to first retrieve the required products
+            // function: gets the required products
+            function getProductsToDelete(orderId) {
+                $.ajax({
+                    type: "GET",
+                    url: "/api/orderdetails"
+                })
+                    .done(function (data) {
+                        // stores the products ids of the products that need to be updated
+                        var products = {
+                            productIds: []
+                        };
+                        // get each product associated with the order
+                        $.each(data, function (key, value) {
+                            if (value.orderId == orderId) {
+                                products.productIds.push(value.productId);
+                            }
+                        });
+                        // calls function to update product quantities
+                        updateQuantity(products);
+                    })
+                    .fail(function () {
+                        alert("There was an error processing the request");
+                    })
+            }
+
+            // updates the quantities of the products that are being deleted
+            // by making a post request to update the product quantity values stored in the db
+            function updateQuantity(products) {
+                $.ajax({
+                    type: "POST",
+                    url: "/api/productsquantity",
+                    data: products
+                })
+                    .done(function (data) {
+                        data = {};
+                    })
+                    .fail(function () {
+                        alert("There was an error processing the request");
+                    });
+            }
         });
     </script>
 }
