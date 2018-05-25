@@ -10,4 +10,4 @@ the app has a variety of plugins to improve its functionality, including:
 
 jQuery validation, twitter's typeahead, bootbox, DataTables, toastr notifications.
 
-Try out the application here: (link)
+Try out the application here: http://toolrentalstoreapp.azurewebsites.net/
